@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const {User} = require('../models/User');
 
 /* Register new user */
 const register = async (req, res, next) => {
@@ -16,21 +17,32 @@ const register = async (req, res, next) => {
 };
 
 /* login user */
-const login = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+const login = async (req, res, next) => {
+  // const { email, password } = req.body;
+  // const user = await User.findOne({ email });
+  // if (!user) {
+  //   return res.status(401).json({ message: 'User not found' });
+  // }
+  // const isPasswordValid = await user.comparePassword(password);
+  // if (!isPasswordValid) {
+  //   return res.status(401).json({ message: 'Invalid credentials' });
+  // }
+  // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  // const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  // user.refreshToken = refreshToken;
+  // await user.save();
+  // res.json({ token, refreshToken });
+  try {
+    const userData = req.body;
+    const result = await authService.login(userData);
+    res.status(201).json({
+      success: true,
+      message: 'User logged in successfully',
+      user: result,
+    });
+  } catch (error) {
+    next(error);
   }
-  const isPasswordValid = await user.comparePassword(password);
-  if (!isPasswordValid) {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  user.refreshToken = refreshToken;
-  await user.save();
-  res.json({ token, refreshToken });
 };
 
 /* Refresh Token */

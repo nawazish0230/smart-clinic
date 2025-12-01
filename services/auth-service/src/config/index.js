@@ -7,7 +7,7 @@ module.exports = {
   mongodbURI: process.env.MONGODB_URI || 'mongodb://localhost:27017/auth_db',
   
   jwtSecret: process.env.JWT_SECRET || 'your_secret_key',
-  jwtExpiration: process.env.JWT_EXPIRATION || '1h',
+  jwtExpireIn: process.env.JWT_EXPIRE_IN || '1h',
   jwtRefershSecret: process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-jwt-key',
-  jwtRefreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
 };

@@ -13,7 +13,7 @@ const generateAccessToken = (payload) => {
     roles: payload.roles,
   };
   return jwt.sign(tokenPayload, config.jwtSecret, { 
-    expiresIn: config.jwtExpiration, 
+    expiresIn: config.jwtExpireIn, 
     issuer: config.serviceName,
   }
   );
@@ -30,7 +30,7 @@ const generateRefreshToken = (payload) => {
     userId: payload.userId,
   };
   return jwt.sign(tokenPayload, config.jwtRefershSecret, { 
-    expiresIn: config.jwtRefreshExpiration, 
+    expiresIn: config.jwtRefreshExpiresIn, 
     issuer: config.serviceName,
   }
   );

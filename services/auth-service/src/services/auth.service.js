@@ -64,14 +64,14 @@ const register = async (userData) => {
  * @param {string} password - User password
  * @returns {Object} - User data and tokens
  */
-const login = async (req, res) => {
+const login = async (userData) => {
   // find the user with password field
-  const { email, password } = req.body;
+  const { email, password } = userData;
 
   // if user exisit or not
-  const user = user.findByEmail(email);
+  const user = await User.findByEmail(email).select('+password');
   if(!user){
-    throw new AuthenticationError('Email not found');
+    throw new AuthenticationError('User not found');
   }
 
   // check if user is active
@@ -86,24 +86,39 @@ const login = async (req, res) => {
   }
 
   // generate JWT token
-  const payload = {
+  const tokenPayload = {
     userId: user._id,
     email: user.email,
     roles: user.roles,
   }
 
   // generate/update refresh token
-  const jwtToken = generateAccessToken(payload);
+  const accessToken = generateAccessToken(tokenPayload);
   const refreshToken = generateRefreshToken({userId: user._id.toString()});
 
-  user.refreshToken = refreshToken;
-
-
   // save refresh token to user
+  user.refreshToken = refreshToken;
+  user.lastLogin = new Date();
+  await user.save({validateBeforeSave: false});
 
-  // return the user and tokens
+  logger.info(`User logged in: ${user.email}`);
+  // return user data and tokens
+  return {
+    user: {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: user.roles,
+      status: user.status,
+      lastLogin: user.lastLogin,
+    },
+    accessToken,
+    refreshToken,
+  }
 };
 
 module.exports = {
   register,
+  login,
 };
