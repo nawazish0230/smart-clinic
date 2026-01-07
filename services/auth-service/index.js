@@ -1,6 +1,5 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const config = require('./src/config');
 const logger = require('./src/utils/logger');
 
 const authRoutes = require('./src/routes/auth.route');
