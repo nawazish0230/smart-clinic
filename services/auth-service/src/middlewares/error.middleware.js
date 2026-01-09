@@ -1,8 +1,8 @@
 const logger = require('../utils/logger');
 
 /**
- * 
- * @param {Global error handling middleware} err 
+ *
+ * @param {Global error handling middleware} err
  */
 const errorMiddleware = (err, req, res, next) => {
   logger.error(`Error: ${err.message}`, {
@@ -19,7 +19,7 @@ const errorMiddleware = (err, req, res, next) => {
   // mongoose validation error response
   if (err.name === 'ValidationError') {
     statusCode = 400;
-    message = Object.values(err.errors).map((val) => val.message);
+    message = Object.values(err.errors).map(val => val.message);
   }
 
   // mongoose duplicate key err response
@@ -44,20 +44,20 @@ const errorMiddleware = (err, req, res, next) => {
 };
 
 /**
- * 
- * @param {Error handling middleware} err 
- * @param {Request} req 
- * @param {Response} res 
- * @param {NextFunction} next 
+ *
+ * @param {Error handling middleware} err
+ * @param {Request} req
+ * @param {Response} res
+ * @param {NextFunction} next
  */
 const notFoundHandler = (req, res, next) => {
   res.status(404).json({
     success: false,
     message: 'Resource not found',
   });
-}
+};
 
 module.exports = {
   errorMiddleware,
-  notFoundHandler
-}
+  notFoundHandler,
+};

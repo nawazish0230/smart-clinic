@@ -1,10 +1,13 @@
 ## Mutliple types of auth implmentation
+
 - JWT authentition
 - JWTo
 - Octas
 
 # User Model
+
 ## Well Structure
+
 Note - This will make it rebust persitence layer
 
 - Schema level validation

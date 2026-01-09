@@ -3,7 +3,7 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 const { ConflictError, AuthenticationError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
-const register = async (userData) => {
+const register = async userData => {
   const { email, password, firstName, lastName, roles } = userData;
   // check if user already exists
   const existingUser = await User.findByEmail(email);
@@ -15,13 +15,13 @@ const register = async (userData) => {
   const userRoles = roles && roles.length > 0 ? roles : [USER_ROLES.PATIENT];
 
   // create a new user
-  const user = new User({ 
-    email: email.toLowerCase(), 
-    password, 
-    firstName, 
-    lastName, 
-    roles: userRoles, 
-    status: USER_STATUS.ACTIVE 
+  const user = new User({
+    email: email.toLowerCase(),
+    password,
+    firstName,
+    lastName,
+    roles: userRoles,
+    status: USER_STATUS.ACTIVE,
   });
 
   // save the user
@@ -31,15 +31,15 @@ const register = async (userData) => {
     userId: user._id,
     email: user.email,
     roles: user.roles,
-  }
+  };
 
   const accessToken = generateAccessToken(payload);
-  const refreshToken = generateRefreshToken({userId: user._id.toString()});
+  const refreshToken = generateRefreshToken({ userId: user._id.toString() });
 
   // save refresh token to user document
   user.refreshToken = refreshToken;
   user.lastLogin = new Date();
-  await user.save({validateBeforeSave: false});
+  await user.save({ validateBeforeSave: false });
 
   logger.info(`New user registered: ${user.email}`);
   // return user data and tokens
@@ -64,24 +64,24 @@ const register = async (userData) => {
  * @param {string} password - User password
  * @returns {Object} - User data and tokens
  */
-const login = async (userData) => {
+const login = async userData => {
   // find the user with password field
   const { email, password } = userData;
 
   // if user exisit or not
   const user = await User.findByEmail(email).select('+password');
-  if(!user){
+  if (!user) {
     throw new AuthenticationError('User not found');
   }
 
   // check if user is active
-  if(user.status !== USER_STATUS.ACTIVE){
+  if (user.status !== USER_STATUS.ACTIVE) {
     throw new AuthenticationError('User is not active');
   }
 
   // verify password
   const isPasswordValid = await user.comparePassword(password);
-  if(!isPasswordValid){
+  if (!isPasswordValid) {
     throw new AuthenticationError('Email/Password is incorrect');
   }
 
@@ -90,16 +90,16 @@ const login = async (userData) => {
     userId: user._id,
     email: user.email,
     roles: user.roles,
-  }
+  };
 
   // generate/update refresh token
   const accessToken = generateAccessToken(tokenPayload);
-  const refreshToken = generateRefreshToken({userId: user._id.toString()});
+  const refreshToken = generateRefreshToken({ userId: user._id.toString() });
 
   // save refresh token to user
   user.refreshToken = refreshToken;
   user.lastLogin = new Date();
-  await user.save({validateBeforeSave: false});
+  await user.save({ validateBeforeSave: false });
 
   logger.info(`User logged in: ${user.email}`);
   // return user data and tokens
@@ -115,7 +115,7 @@ const login = async (userData) => {
     },
     accessToken,
     refreshToken,
-  }
+  };
 };
 
 module.exports = {

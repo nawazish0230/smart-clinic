@@ -1,5 +1,5 @@
 const authService = require('../services/auth.service');
-const {User} = require('../models/User');
+const { User } = require('../models/User');
 
 /* Register new user */
 const register = async (req, res, next) => {
@@ -52,7 +52,9 @@ const refreshToken = async (req, res) => {
   if (!user) {
     return res.status(401).json({ message: 'Invalid refresh token' });
   }
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+    expiresIn: '1h',
+  });
   res.json({ token });
 };
 
