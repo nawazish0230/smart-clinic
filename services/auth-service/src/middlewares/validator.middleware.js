@@ -26,34 +26,30 @@ const validate = (req, res, next) => {
 */
 
 const validateRegister = [
-    body('email')
-        .isEmail()
-        .withMessage('Invalid email address')
-        .normalizeEmail(),
-    body('password')
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters long')
-        .matches(/\d/)
-        .withMessage('Password must contain at least one number'),
-    body('firstName')
-        .trim()
-        .notEmpty()
-        .withMessage('First name is required')
-        .isLength({min: 2})
-        .withMessage('First name must be at least 2 characters long'),
-    body('lastName')
-        .trim()
-        .notEmpty()
-        .withMessage('Last name is required')
-        .isLength({min: 2})
-        .withMessage('Last name must be at least 2 characters long'),
-    body('roles')
-        .optional()
-        .isArray()
-        .withMessage('Roles must be an array of strings'),
-    validate,
+  body('email').isEmail().withMessage('Invalid email address').normalizeEmail(),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters long')
+    .matches(/\d/)
+    .withMessage('Password must contain at least one number'),
+  body('firstName')
+    .trim()
+    .notEmpty()
+    .withMessage('First name is required')
+    .isLength({ min: 2 })
+    .withMessage('First name must be at least 2 characters long'),
+  body('lastName')
+    .trim()
+    .notEmpty()
+    .withMessage('Last name is required')
+    .isLength({ min: 2 })
+    .withMessage('Last name must be at least 2 characters long'),
+  body('roles')
+    .optional()
+    .isArray()
+    .withMessage('Roles must be an array of strings'),
+  validate,
 ];
-
 
 /*
 * Login validation rules
@@ -72,9 +68,16 @@ const validateLogin = [
 @returns {Function} - Validation middleware function
 */
 const validateRefreshToken = [
-  body('refreshToken').notEmpty().withMessage('Refresh token is required').trim(),
+  body('refreshToken')
+    .notEmpty()
+    .withMessage('Refresh token is required')
+    .trim(),
   validate,
 ];
 
-
-module.exports = { validate, validateRegister, validateLogin, validateRefreshToken };
+module.exports = {
+  validate,
+  validateRegister,
+  validateLogin,
+  validateRefreshToken,
+};

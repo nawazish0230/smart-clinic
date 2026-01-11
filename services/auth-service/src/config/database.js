@@ -3,7 +3,8 @@ const logger = require('../utils/logger');
 
 const connectDatabase = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/auth_db';
+    const mongoURI =
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/auth_db';
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
