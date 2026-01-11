@@ -34,6 +34,13 @@ class AuthorizationError extends AppError {
   }
 }
 
+class NotFoundError extends AppError {
+  constructor(message = 'Resource not found') {
+    super(message,);
+    this.name = "NotFoundError";
+  }
+}
+
 class ConflictError extends AppError {
   constructor(message = 'Resource already exists!') {
     super(message, 409);
@@ -47,4 +54,5 @@ module.exports = {
   AuthenticationError,
   AuthorizationError,
   ConflictError,
+  NotFoundError
 };

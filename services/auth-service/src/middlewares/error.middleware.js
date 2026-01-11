@@ -4,7 +4,7 @@ const logger = require('../utils/logger');
  *
  * @param {Global error handling middleware} err
  */
-const errorMiddleware = (err, req, res, next) => {
+const errorHandler = (err, req, res, next) => {
   logger.error(`Error: ${err.message}`, {
     stack: err.stack,
     status: res.statusCode,
@@ -58,6 +58,6 @@ const notFoundHandler = (req, res, next) => {
 };
 
 module.exports = {
-  errorMiddleware,
+  errorHandler,
   notFoundHandler,
 };

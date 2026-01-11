@@ -1,6 +1,6 @@
 const { User, USER_ROLES, USER_STATUS } = require('../models/User');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
-const { ConflictError, AuthenticationError } = require('../utils/errors');
+const { ConflictError, AuthenticationError, NotFoundError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
 const register = async userData => {
@@ -39,6 +39,8 @@ const register = async userData => {
   // save refresh token to user document
   user.refreshToken = refreshToken;
   user.lastLogin = new Date();
+
+  // here we are trying to bypass all the mongoose validation rules, as at above we have already done user.save that do all validation 
   await user.save({ validateBeforeSave: false });
 
   logger.info(`New user registered: ${user.email}`);
@@ -46,7 +48,7 @@ const register = async userData => {
 
   return {
     user: {
-      id: user._id,
+      userId: user._id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -105,7 +107,7 @@ const login = async userData => {
   // return user data and tokens
   return {
     user: {
-      id: user._id,
+      userId: user._id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -118,7 +120,33 @@ const login = async userData => {
   };
 };
 
+
+/***
+ * Get user profile
+ * @param {string} userId - UserId
+ * @returns {Object} - User profile
+ */
+const getProfile = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  return {
+    userId: user._id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    roles: user.roles,
+    status: user.status,
+    lastLogin: user.lastLogin,
+    createdAt: user.createdAt
+  }
+}
+
+
 module.exports = {
   register,
   login,
+  getProfile
 };

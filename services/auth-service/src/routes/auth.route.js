@@ -6,6 +6,7 @@ const {
   validateLogin,
   validateRefreshToken,
 } = require('../middlewares/validator.middleware');
+const { authenticate } = require('../middlewares/auth.middleware');
 
 router.post('/register', validateRegister, authController.register);
 
@@ -17,9 +18,8 @@ router.post(
   authController.refreshToken
 );
 
-router.post('/logout', authController.logout);
+router.post('/logout', authenticate, authController.logout);
 
-// router
-//     .get('/profile', authController.getProfile);
+router.get('/profile', authenticate, authController.getProfile);
 
 module.exports = router;

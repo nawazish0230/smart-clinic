@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const { User } = require('../models/User');
+const logger = require('../utils/logger');
 
 /* Register new user */
 const register = async (req, res, next) => {
@@ -18,24 +19,14 @@ const register = async (req, res, next) => {
 
 /* login user */
 const login = async (req, res, next) => {
-  // const { email, password } = req.body;
-  // const user = await User.findOne({ email });
-  // if (!user) {
-  //   return res.status(401).json({ message: 'User not found' });
-  // }
-  // const isPasswordValid = await user.comparePassword(password);
-  // if (!isPasswordValid) {
-  //   return res.status(401).json({ message: 'Invalid credentials' });
-  // }
-  // const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  // const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  // user.refreshToken = refreshToken;
-  // await user.save();
-  // res.json({ token, refreshToken });
   try {
-    const userData = req.body;
-    const result = await authService.login(userData);
-    res.status(201).json({
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      throw new ValidationError("Email and password are required");
+    }
+    const result = await authService.login({ email, password });
+    res.status(200).json({
       success: true,
       message: 'User logged in successfully',
       user: result,
@@ -60,10 +51,35 @@ const refreshToken = async (req, res) => {
 
 /* Logout User */
 const logout = async (req, res) => {
-  const { refreshToken } = req.body;
-  const user = await User.findOne({ refreshToken });
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid refresh token' });
+  const userId = req.user.userId;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+    user.refreshToken = undefined;
+    await user.save();
+    logger.info(`User logged out: ${user.email}`);
+    res.status(200).json({
+      success: true,
+      message: "User logged out successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const profile = await authService.getProfile(userId);
+    res.status(200).json({
+      success: true,
+      message: "User profile fetched successfully",
+      data: profile,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -72,4 +88,5 @@ module.exports = {
   login,
   refreshToken,
   logout,
+  getProfile
 };
