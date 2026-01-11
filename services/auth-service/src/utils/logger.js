@@ -16,20 +16,21 @@ const logColors = {
   info: 'green',
   http: 'magenta',
   debug: 'white',
-}
+};
 
 // configure winston to use the defined colors
 winston.addColors(logColors);
 
 // create logger instance
 const logger = winston.createLogger({
-  level : process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || 'info',
   levels: logLevels,
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.colorize({ all: true }),
     winston.format.printf(
-        (info) => `${info.timestamp} [${config.serviceName}] ${info.level}: ${info.message}`
+      info =>
+        `${info.timestamp} [${config.serviceName}] ${info.level}: ${info.message}`
     )
   ),
   transports: [
@@ -39,7 +40,7 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
     // write all logs to combined.log file
     new winston.transports.File({ filename: 'logs/combined.log' }),
-  ]
+  ],
 });
 
-module.exports = logger;    
+module.exports = logger;

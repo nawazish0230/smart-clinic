@@ -5,18 +5,17 @@ const config = require('../config');
  * Generate JWT access token
  * @Param {Object} payload - The payload (userId, email, roles)
  * @Return {String} - JWT access token
-**/
-const generateAccessToken = (payload) => {
+ **/
+const generateAccessToken = payload => {
   const tokenPayload = {
     userId: payload.userId,
     email: payload.email,
     roles: payload.roles,
   };
-  return jwt.sign(tokenPayload, config.jwtSecret, { 
-    expiresIn: config.jwtExpiration, 
+  return jwt.sign(tokenPayload, config.jwtSecret, {
+    expiresIn: config.jwtExpireIn,
     issuer: config.serviceName,
-  }
-  );
+  });
 };
 
 /**
@@ -25,15 +24,14 @@ const generateAccessToken = (payload) => {
  * @return {String} - JWT refresh token
  */
 
-const generateRefreshToken = (payload) => {
+const generateRefreshToken = payload => {
   const tokenPayload = {
     userId: payload.userId,
   };
-  return jwt.sign(tokenPayload, config.jwtRefershSecret, { 
-    expiresIn: config.jwtRefreshExpiration, 
+  return jwt.sign(tokenPayload, config.jwtRefershSecret, {
+    expiresIn: config.jwtRefreshExpiresIn,
     issuer: config.serviceName,
-  }
-  );
+  });
 };
 
 /**
@@ -42,18 +40,18 @@ const generateRefreshToken = (payload) => {
  * @Return {Object} - Decoded token payload
  */
 
-const verifyAccessToken = (token) => {
-  try{
-      return jwt.verify(token, config.jwtSecret);
-  }catch(error){
-      if(error.name === 'TokenExpiredError'){
-          throw new Error('Refresh token has expired');
-      }else if(error.name === 'JsonWebTokenError'){
-          throw new Error('Invalid refresh token');
-      }
-      throw error;
+const verifyAccessToken = token => {
+  try {
+    return jwt.verify(token, config.jwtSecret);
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Refresh token has expired');
+    } else if (error.name === 'JsonWebTokenError') {
+      throw new Error('Invalid refresh token');
+    }
+    throw error;
   }
-}
+};
 
 /**
  * Verify JWT refresh token
@@ -61,18 +59,18 @@ const verifyAccessToken = (token) => {
  * @Return {Object} - Decoded token payload
  */
 
-const verifyRefreshToken = (token) => {
-  try{
-      return jwt.verify(token, config.jwtRefershSecret);
-  }catch(error){
-      if(error.name === 'TokenExpiredError'){
-          throw new Error('Refresh token has expired');
-      }else if(error.name === 'JsonWebTokenError'){
-          throw new Error('Invalid refresh token');
-      }
-      throw error;
+const verifyRefreshToken = token => {
+  try {
+    return jwt.verify(token, config.jwtRefershSecret);
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Refresh token has expired');
+    } else if (error.name === 'JsonWebTokenError') {
+      throw new Error('Invalid refresh token');
+    }
+    throw error;
   }
-}
+};
 
 /**
  * Extract token from Authorization header
@@ -80,16 +78,16 @@ const verifyRefreshToken = (token) => {
  * @return {String | null} - Extracted token from header or null
  */
 
-const extractTokenFromHeader = (authHeader) => {
-  if(!authHeader) return null;
+const extractTokenFromHeader = authHeader => {
+  if (!authHeader) return null;
 
   const parts = authHeader.split(' ');
-  if(parts.length !==2 || parts[0] !== 'Bearer'){
-      return null;
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return null;
   }
 
   return parts[1];
-}
+};
 
 module.exports = {
   generateAccessToken,
