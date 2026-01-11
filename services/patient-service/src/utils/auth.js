@@ -11,23 +11,23 @@ const validateToken = async (token) => {
   try {
     const response = await axios.get(`${config.authServiceUrl}/validate-token`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
     if (response.data.success) {
-      return response.data.data
+      return response.data.data;
     }
     throw new AuthenticationError('Invalid token');
   } catch (error) {
-    if(error.response && error.response.status === 401){
+    if (error.response && error.response.status === 401) {
       throw new AuthenticationError('Unauthorized');
     }
-    if (error.code === "ECONNREFUSED") {
+    if (error.code === 'ECONNREFUSED') {
       throw new AuthenticationError('Auth service is unavailable');
     }
     throw new AuthenticationError(error.message || 'Failed to validate token');
   }
-}
+};
 
 /**
  * Extract token from Authorization header
@@ -40,10 +40,10 @@ const extractTokenFromHeader = (authHeader) => {
   if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
     return null;
   }
-  return parts[1];  
-}
+  return parts[1];
+};
 
 module.exports = {
   validateToken,
   extractTokenFromHeader,
-}
+};

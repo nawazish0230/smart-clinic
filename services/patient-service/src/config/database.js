@@ -6,13 +6,13 @@ const logger = require('../utils/logger');
  * @param {string} uri - MongoDB connection URI
  * @returns {Promise<void>}
  */
-const connectDB = async (uri) => {
+const connectDatabase = async (uri) => {
   try {
     const mongodbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/patient_db';
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-    }
+    };
     await mongoose.connect(mongodbUri, options);
 
     logger.info(`Connecting to MongoDB database at ${mongodbUri}`);
@@ -35,4 +35,6 @@ const connectDB = async (uri) => {
     logger.error('Failed to connect to MongoDB database', error);
     process.exit(1);
   }
-}
+};
+
+module.exports = connectDatabase;

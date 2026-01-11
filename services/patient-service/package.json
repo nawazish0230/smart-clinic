@@ -4,7 +4,13 @@
   "description": "- Patient CRUD Operation - Medical history tracking - Current medication tracking - Emergency contact information - Insurance information management - MongoDB database integration - Integration with auth service for authentication - Role-based access control (RBAC) - Input validation - Error Handling - Request Logger - SWagger",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint \"**/*.js\"",
+    "lint:fix": "eslint \"**/*.js\" --fix",
+    "format": "prettier --write \"**/*.{js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,json,md}\"",
+    "seed": "node src/scripts/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -19,8 +25,14 @@
     "helmet": "^8.1.0",
     "joi": "^18.0.2",
     "mongoose": "^9.0.0",
+    "prettier": "^3.7.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4"
   }
 }

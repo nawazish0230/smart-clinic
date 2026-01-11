@@ -3,19 +3,19 @@
  */
 
 class ApiError extends Error {
-    constructor(message, statusCode) {
-        super(message);
-        this.statusCode = statusCode;
-        this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
-        this.isOperational = true;
-    }
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
+    this.isOperational = true;
+  }
 }
 
 class ValidationError extends ApiError {
-    constructor(message) {
-        super(message || 'Validation Error', 400);
-    }
+  constructor(message) {
+    super(message || 'Validation Error', 400);
   }
+}
 
 class AuthenticationError extends AppError {
   constructor(message) {
@@ -23,7 +23,7 @@ class AuthenticationError extends AppError {
   }
 }
 
-class AuthorizationError extends AppError{
+class AuthorizationError extends AppError {
   constructor(message) {
     super(message || 'Authorization Error', 403);
   }
@@ -48,4 +48,4 @@ module.exports = {
   AuthorizationError,
   NotFoundError,
   ConflictError,
-}
+};
