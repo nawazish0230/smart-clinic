@@ -2,7 +2,7 @@
  * Custom error classes for patient service
  */
 
-class ApiError extends Error {
+class AppError extends Error {
   constructor(message, statusCode) {
     super(message);
     this.statusCode = statusCode;
@@ -11,7 +11,7 @@ class ApiError extends Error {
   }
 }
 
-class ValidationError extends ApiError {
+class ValidationError extends AppError {
   constructor(message) {
     super(message || 'Validation Error', 400);
   }
@@ -42,7 +42,7 @@ class ConflictError extends AppError {
 }
 
 module.exports = {
-  ApiError,
+  AppError,
   ValidationError,
   AuthenticationError,
   AuthorizationError,

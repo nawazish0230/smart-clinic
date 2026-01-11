@@ -1,0 +1,34 @@
+const { extractTokenFromHeader, validateToken } = require('../utils/auth');
+
+/**
+ * Authentication middleare - Validates JWT token with Auth service
+ */
+
+const authenticate = async (req, res, next) => {
+  try {
+    const token = extractTokenFromHeader(req.headers.authorization);
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    // validate token with Auth service
+    const user = await validateToken(token);
+
+    req.user = {
+      userId: user.id,
+      email: user.email,
+      roles: user.roles,
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: error.message || 'Invalid or expired token'
+    });
+  }
+}
+
+module.exports = { authenticate };
