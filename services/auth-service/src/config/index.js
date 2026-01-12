@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 module.exports = {
-  port: process.env.PORT || 5000,
+  port: process.env.PORT || 3001,
   nodeEnv: process.env.NODE_ENV || 'development',
   serviceName: process.env.SERVICE_NAME || 'auth-service',
   mongodbURI: process.env.MONGODB_URI || 'mongodb://localhost:27017/auth_db',
