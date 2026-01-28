@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { config } = require('../config');
+const config = require('../config');
 const { AuthenticationError } = require('./errors');
 
 /**
@@ -9,7 +9,7 @@ const { AuthenticationError } = require('./errors');
  */
 const validateToken = async (token) => {
   try {
-    const response = await axios.get(`${config.authServiceUrl}/validate-token`, {
+    const response = await axios.get(`${config.authServiceUrl}/api/auth/profile`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -35,7 +35,7 @@ const validateToken = async (token) => {
  * @returns {string|null} - Extract token or null if not found
  */
 const extractTokenFromHeader = (authHeader) => {
-  if (!header) return null;
+  if (!authHeader) return null;
   const parts = authHeader.split(' ');
   if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
     return null;

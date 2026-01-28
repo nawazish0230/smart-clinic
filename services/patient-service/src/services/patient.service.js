@@ -2,7 +2,7 @@ const { Patient, PATIENT_STATUS } = require('../models/Patient');
 const { ConflictError, NotFoundError, ValidationError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
-/*
+/** 
 * Create new patient
 * @param {Object} patientData - Patient data
 * @returns {Promise<Object>} - Created patient
@@ -48,26 +48,24 @@ const createPatient = async (patientData) => {
   }
 };
 
-/*
+/** 
 * Get patient by patientId
 * @param {string} patientId - the Id of the patient to retrieve
 * @returns {Promise<Object> | null} - Patient or null if not found
 * @throws {NotFoundError} - If patient not found
 */
+
+// ask -> why try catch is not rquired to used here
 const getPatientById = async (patientId) => {
-  try {
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      throw new NotFoundError('Patient not found');
-    }
-    return patient;
-  } catch (error) {
-    logger.error(`Failed to get patient: ${error.message}`);
-    throw new Error('Failed to get patient');
+  console.log({ patientId })
+  const patient = await Patient.findById(patientId);
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
   }
+  return patient;
 };
 
-/*
+/** 
 * Get patient by userId
 * @param {string} userId - the User Id from the auth service
 * @returns {Promise<Object> | null} - Patient or null if not found
@@ -85,7 +83,7 @@ const getPatientByUserId = async (userId) => {
   }
 };
 
-/*
+/**
 * Get patient by email
 * @param {string} email - the email of the patient to retrieve
 * @returns {Promise<Object> | null} - Patient or null if not found
@@ -93,7 +91,7 @@ const getPatientByUserId = async (userId) => {
 */
 const getPatientByEmail = async (email) => {
   try {
-    const patient = await Patient.findByEmail(email);
+    const patient = await Patient.findByEmail(email.toLowerCase());
     if (!patient) {
       return null;
     }
@@ -103,19 +101,46 @@ const getPatientByEmail = async (email) => {
   }
 };
 
-/*
-* Get all patients
-* @param {Object} filter - Filter options
-* @param {Object} pagination - Pagination options
-* @returns {Promise<Object>} - List of patients
-* @throws {Error} - If failed to get patients
-* @throws {NotFoundError} - If no patients found
-* CQRS pattern will be used here
-*/
-const getAllPatients = async (filter, pagination) => {
+/**
+ * Get All Patients with Pagination and filters
+ * @param {Object} filters - filter options
+ * @param {Number} page - page number
+ * @param {Number} limit - number of records per page
+ * @returns {Object} paginated list of patients
+ */
+const getAllPatients = async (filters = {}, page = 1, limit = 10) => {
   try {
-    const patients = await Patient.find(filter).skip(pagination.skip).limit(pagination.limit).sort(pagination.sort);
-    return patients;
+
+    const query = {};
+
+    // Apply filters
+    if (filters.status) {
+      query.status = filters.status;
+    }
+
+    if (filters.city) {
+      query.city = new RegExp(filters.city, 'i'); // case insensitive
+    }
+
+    if (filters.search) {
+      // use text search on read for better performance
+      //query.$text = { $search: filters.search };
+
+      // simple or condition on name and email fields
+      query.$or = [
+        { firstName: new RegExp(filters.search, 'i') },
+        { lastName: new RegExp(filters.search, 'i') },
+        { email: new RegExp(filters.search, 'i') },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    return await Patient.find(query)
+      .sort({ registrationDate: -1 })
+      .skip(skip)
+      .limit(limit)
+
   } catch (error) {
     throw new Error('Failed to get patients');
   }
