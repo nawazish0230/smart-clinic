@@ -1,4 +1,5 @@
 const { Patient, PATIENT_STATUS } = require('../models/Patient');
+const { PatientReadView } = require('../models/PatientReadView');
 const { ConflictError, NotFoundError, ValidationError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
@@ -39,6 +40,9 @@ const createPatient = async (patientData) => {
     // save patient to database
     await patient.save();
     logger.info(`Patient created successfully with id: ${patient._id} ${patient.email}`);
+
+    // update read view (CQRS)
+    await PatientReadView.updateFromPatient(patient);
 
     // return patient object
     return patient;
@@ -136,10 +140,14 @@ const getAllPatients = async (filters = {}, page = 1, limit = 10) => {
 
     const skip = (page - 1) * limit;
 
-    return await Patient.find(query)
-      .sort({ registrationDate: -1 })
-      .skip(skip)
-      .limit(limit)
+    // User read optimized view dfor fetching patients (CQRS)
+    return PatientReadView.find(query).sort({ registrationDate: -1 }).skip(skip).limit(limit);
+    PatientReadView.countDocuments(query)
+
+    // return await Patient.find(query)
+    //   .sort({ registrationDate: -1 })
+    //   .skip(skip)
+    //   .limit(limit)
 
   } catch (error) {
     throw new Error('Failed to get patients');
