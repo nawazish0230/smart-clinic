@@ -1,5 +1,5 @@
 const { Patient, PATIENT_STATUS } = require('../models/Patient');
-const { PatientReadView } = require('../models/PatientReadView');
+const PatientReadView = require('../models/PatientReadView');
 const { ConflictError, NotFoundError, ValidationError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
@@ -14,7 +14,7 @@ const createPatient = async (patientData) => {
   try {
     const { userId, email } = patientData;
     // check if patient already exists with userId 
-    // ask : how we will get userId while create ?
+    // doubt : how we will get userId while create ?
     if (userId) {
       const existingByUserId = await Patient.findByUserId(userId);
       if (existingByUserId) {
@@ -59,9 +59,9 @@ const createPatient = async (patientData) => {
 * @throws {NotFoundError} - If patient not found
 */
 
-// ask -> why try catch is not rquired to used here
+// No try-catch here: errors (e.g. DB failure, CastError) propagate to the controller,
+// which uses try-catch + next(error) so the global error middleware can format the response.
 const getPatientById = async (patientId) => {
-  console.log({ patientId })
   const patient = await Patient.findById(patientId);
   if (!patient) {
     throw new NotFoundError('Patient not found');
@@ -112,7 +112,7 @@ const getPatientByEmail = async (email) => {
  * @param {Number} limit - number of records per page
  * @returns {Object} paginated list of patients
  */
-const getAllPatients = async (filters = {}, page = 1, limit = 10) => {
+const getAllPatients = async (filters = {}, page = 1, limit = 10, useReadView = true) => {
   try {
 
     const query = {};
@@ -141,18 +141,192 @@ const getAllPatients = async (filters = {}, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
     // User read optimized view dfor fetching patients (CQRS)
-    return PatientReadView.find(query).sort({ registrationDate: -1 }).skip(skip).limit(limit);
-    PatientReadView.countDocuments(query)
+    if (useReadView) {
+      const [patients, total] = await Promise.all([
+        PatientReadView.find(query).sort({ registrationDate: -1 }).skip(skip).limit(limit),
+        PatientReadView.countDocuments(query)
+      ])
 
-    // return await Patient.find(query)
-    //   .sort({ registrationDate: -1 })
-    //   .skip(skip)
-    //   .limit(limit)
+      // fetch full patient data if needed (can be optimized further if required)
+      const patientIds = patients.map(patient => patient.patientId);
+      const fullPatients = await Patient.find({ _id: { $in: patientIds } });
+
+      return {
+        patients: fullPatients,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        }
+      }
+    }
+
+    // fallback to write model if read view not available
+    const [patients, total] = await Promise.all([
+      Patient.find(query)
+        .sort({ registrationDate: -1 })
+        .skip(skip)
+        .limit(limit),
+      Patient.countDocuments(query)
+    ])
+
+    return {
+      patients,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      }
+    }
 
   } catch (error) {
     throw new Error('Failed to get patients');
   }
 };
+
+/**
+ * Update Patient Details
+ * @param {String} patientId - ID of the patient to update
+ * @param {Object} updateData - Data to update
+ * @returns {Object} Updated Patient object
+ */
+const updatePatient = async (patientId, updateData) => {
+  const patient = await getPatientById(patientId);
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
+  }
+
+  // handle email update separately to check for conflicts
+  if (updateData.email && updateData.email !== patient.email) {
+    const existingByEmail = await Patient.findByEmail(updateData.email);
+    if (existingByEmail && existingByEmail._id.toString() !== patientId) {
+      throw new ConflictError('Another patient already exists with this email');
+    }
+    updateData.email = updateData.email.toLowerCase().trim();
+  }
+
+  Object.assign(patient, updateData);
+  await patient.save();
+
+  logger.info(`Patient updated successfully with id: ${patient._id} ${patient.email}`);
+
+  // Update read view (CQRS)
+  await PatientReadView.updateFromPatient(patient);
+
+  return patient;
+}
+
+/***
+ * Delete patient (sft delete by setting status to INACTIVE)
+ * @param {String} patientId - ID of the patient to delete
+ */
+const deletePatient = async (patientId) => {
+  const patient = await getPatientById(patientId);
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
+  }
+  patient.status = PATIENT_STATUS.INACTIVE;
+  await patient.save();
+
+  logger.info(`Patient deleted successfully with id: ${patient._id} ${patient.email}`);
+
+  // Update read view (CQRS)
+  await PatientReadView.updateFromPatient(patient);
+
+  return patient
+}
+
+/**
+ * Add medical history item
+ * @param {String} patientId - ID of the patient
+ * @param {Object} historyItem - Medical history item to add
+ * @return {Object} Updated Patient object
+ */
+
+const addMedicalHistory = async (patientId, historyItem) => {
+  const patient = await getPatientById(patientId);
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
+  }
+
+  await patient.addMedicalHistoryItem(historyItem);
+
+  logger.info(`Medical history item added successfully with id: ${patient._id} ${patient.email}`);
+
+  // Update read view (CQRS)
+  await PatientReadView.updateFromPatient(patient);
+
+  return patient;
+}
+
+
+/**
+ * Add allergy item
+ * @param {String} patientId - ID of the patient
+ * @param {Object} allergyItem - Allergy item to add
+ * @return {Object} Updated Patient object
+ */
+const addAllergy = async (patientId, allergyItem) => {
+  const patient = await getPatientById(patientId);
+
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
+  }
+
+  await patient.addAllergy(allergyItem);
+  logger.info(`Allergy added for patient: ${patient._id})`);
+
+  // Update read view (CQRS)
+  await PatientReadView.updateFromPatient(patient);
+
+  return patient;
+}
+
+/**
+ * Add medication item
+ * @param {String} patientId - ID of the patient
+ * @param {Object} medicationItem - Medication item to add
+ * @return {Object} Updated Patient object
+ */
+const addMedication = async (patientId, medicationItem) => {
+  const patient = await getPatientById(patientId);
+
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
+  }
+
+  await patient.addMedication(medicationItem);
+  logger.info(`Medication added for patient: ${patient._id})`);
+
+  // Update read view (CQRS)
+  await PatientReadView.updateFromPatient(patient);
+
+  return patient;
+}
+
+/**
+ * Update last visit date
+ * @param {String} patientId - ID of the patient
+ * @returns {Object} Updated Patient object
+ */
+const updateLastVisit = async (patientId) => {
+  const patient = await getPatientById(patientId);
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
+  }
+
+  patient.lastVisitDate = new Date();
+  await patient.save();
+
+  logger.info(`Last visit date updated for patient: ${patient._id})`);
+
+  // Update read view (CQRS)
+  await PatientReadView.updateFromPatient(patient);
+  return patient;
+}
+
 
 module.exports = {
   createPatient,
@@ -160,4 +334,10 @@ module.exports = {
   getPatientByUserId,
   getPatientByEmail,
   getAllPatients,
+  updatePatient,
+  deletePatient,
+  addMedicalHistory,
+  addAllergy,
+  addMedication,
+  updateLastVisit
 };
