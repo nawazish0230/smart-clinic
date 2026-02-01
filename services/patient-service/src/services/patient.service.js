@@ -1,6 +1,7 @@
 const { Patient, PATIENT_STATUS } = require('../models/Patient');
 const PatientReadView = require('../models/PatientReadView');
 const { ConflictError, NotFoundError, ValidationError } = require('../utils/errors');
+const { EVENT_TYPES, publishEvent } = require('../utils/eventProducer');
 const logger = require('../utils/logger');
 
 /** 
@@ -43,6 +44,16 @@ const createPatient = async (patientData) => {
 
     // update read view (CQRS)
     await PatientReadView.updateFromPatient(patient);
+
+
+    // Publish PATIENT_CREATED event
+    await publishEvent(EVENT_TYPES.PATIENT_CREATED, {
+      patientId: patient._id.toString(),
+      userId: patient.userId,
+      email: patient.email,
+      firstName: patient.firstName,
+      lastName: patient.lastName
+    })
 
     // return patient object
     return patient;
@@ -215,6 +226,16 @@ const updatePatient = async (patientId, updateData) => {
   // Update read view (CQRS)
   await PatientReadView.updateFromPatient(patient);
 
+
+  // Publish PATIENT_UPDATED event
+  await publishEvent(EVENT_TYPES.PATIENT_UPDATED, {
+    patientId: patient._id.toString(),
+    userId: patient.userId,
+    email: patient.email,
+    updatedFields: Object.keys(updateDate)
+  });
+
+
   return patient;
 }
 
@@ -235,6 +256,14 @@ const deletePatient = async (patientId) => {
   // Update read view (CQRS)
   await PatientReadView.updateFromPatient(patient);
 
+
+  // Publish PATIENT_DELETED event
+  await publishEvent(EVENT_TYPES.PATIENT_DELETED, {
+    patientId: patient._id.toString(),
+    userId: patient.userId,
+    email: patient.email
+  });
+
   return patient
 }
 
@@ -244,7 +273,8 @@ const deletePatient = async (patientId) => {
  * @param {Object} historyItem - Medical history item to add
  * @return {Object} Updated Patient object
  */
-
+// doubt: how to edit/delete medical history / allergy / medication item ?
+// for CRUD we need id as well
 const addMedicalHistory = async (patientId, historyItem) => {
   const patient = await getPatientById(patientId);
   if (!patient) {
@@ -257,6 +287,15 @@ const addMedicalHistory = async (patientId, historyItem) => {
 
   // Update read view (CQRS)
   await PatientReadView.updateFromPatient(patient);
+
+
+
+  // Publish MEDICAL_HISTORY_ADDED event
+  await publishEvent(EVENT_TYPES.MEDICAL_HISTRORY_ADDED, {
+    patientId: patient._id.toString(),
+    condition: historyItem.condition,
+    status: historyItem.status
+  });
 
   return patient;
 }
@@ -281,6 +320,13 @@ const addAllergy = async (patientId, allergyItem) => {
   // Update read view (CQRS)
   await PatientReadView.updateFromPatient(patient);
 
+  // Publish event ALLERGY_ADDED
+  await publishEvent(EVENT_TYPES.ALLERGY_ADDED, {
+    patientId: patient._id.toString(),
+    allergen: allergyItem.allergen,
+    severity: allergyItem.severity
+  });
+
   return patient;
 }
 
@@ -302,6 +348,14 @@ const addMedication = async (patientId, medicationItem) => {
 
   // Update read view (CQRS)
   await PatientReadView.updateFromPatient(patient);
+
+
+  // Publish MEDICATION_ADDED event
+  await publishEvent(EVENT_TYPES.MEDICATION_ADDED, {
+    patientId: patient._id.toString(),
+    medicationName: medicationItem.name,
+    dosage: medicationItem.dosage
+  });
 
   return patient;
 }
