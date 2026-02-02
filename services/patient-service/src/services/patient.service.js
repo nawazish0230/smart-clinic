@@ -12,55 +12,50 @@ const logger = require('../utils/logger');
 * @throws {Error} - If failed to create patient
 */
 const createPatient = async (patientData) => {
-  try {
-    const { userId, email } = patientData;
-    // check if patient already exists with userId 
-    // doubt : how we will get userId while create ?
-    if (userId) {
-      const existingByUserId = await Patient.findByUserId(userId);
-      if (existingByUserId) {
-        throw new ConflictError('Patient already exists with this userId');
-      }
+  const { userId, email } = patientData;
+  // check if patient already exists with userId 
+  // doubt : how we will get userId while create ?
+  if (userId) {
+    const existingByUserId = await Patient.findByUserId(userId);
+    if (existingByUserId) {
+      throw new ConflictError('Patient already exists with this userId');
     }
-
-    // check if patient already exists with email 
-    if (email) {
-      const existingByEmail = await Patient.findByEmail(email);
-      if (existingByEmail) {
-        throw new ConflictError('Patient already exists with this email');
-      }
-    }
-
-    // create new patient with status ACTIVE
-    const patient = new Patient({
-      ...patientData,
-      email: email ? email.toLowerCase().trim() : null,
-      status: PATIENT_STATUS.ACTIVE,
-    });
-
-    // save patient to database
-    await patient.save();
-    logger.info(`Patient created successfully with id: ${patient._id} ${patient.email}`);
-
-    // update read view (CQRS)
-    await PatientReadView.updateFromPatient(patient);
-
-
-    // Publish PATIENT_CREATED event
-    await publishEvent(EVENT_TYPES.PATIENT_CREATED, {
-      patientId: patient._id.toString(),
-      userId: patient.userId,
-      email: patient.email,
-      firstName: patient.firstName,
-      lastName: patient.lastName
-    })
-
-    // return patient object
-    return patient;
-  } catch (error) {
-    logger.error(`Failed to create patient: ${error.message}`);
-    throw new Error('Failed to create patient');
   }
+
+  // check if patient already exists with email 
+  if (email) {
+    const existingByEmail = await Patient.findByEmail(email);
+    if (existingByEmail) {
+      throw new ConflictError('Patient already exists with this email');
+    }
+  }
+
+  // create new patient with status ACTIVE
+  const patient = new Patient({
+    ...patientData,
+    email: email ? email.toLowerCase().trim() : null,
+    status: PATIENT_STATUS.ACTIVE,
+  });
+
+  // save patient to database
+  await patient.save();
+  logger.info(`Patient created successfully with id: ${patient._id} ${patient.email}`);
+
+  // update read view (CQRS)
+  await PatientReadView.updateFromPatient(patient);
+
+
+  // Publish PATIENT_CREATED event
+  await publishEvent(EVENT_TYPES.PATIENT_CREATED, {
+    patientId: patient._id.toString(),
+    userId: patient.userId,
+    email: patient.email,
+    firstName: patient.firstName,
+    lastName: patient.lastName
+  })
+
+  // return patient object
+  return patient;
 };
 
 /** 
@@ -87,15 +82,11 @@ const getPatientById = async (patientId) => {
 * @throws {NotFoundError} - If patient not found
 */
 const getPatientByUserId = async (userId) => {
-  try {
-    const patient = await Patient.findByUserId(userId);
-    if (!patient) {
-      throw new NotFoundError('Patient not found');
-    }
-    return patient;
-  } catch (error) {
-    throw new Error('Failed to get patient');
+  const patient = await Patient.findByUserId(userId);
+  if (!patient) {
+    throw new NotFoundError('Patient not found');
   }
+  return patient;
 };
 
 /**
@@ -105,15 +96,11 @@ const getPatientByUserId = async (userId) => {
 * @throws {NotFoundError} - If patient not found
 */
 const getPatientByEmail = async (email) => {
-  try {
-    const patient = await Patient.findByEmail(email.toLowerCase());
-    if (!patient) {
-      return null;
-    }
-    return patient;
-  } catch (error) {
-    throw new Error('Failed to get patient');
+  const patient = await Patient.findByEmail(email.toLowerCase());
+  if (!patient) {
+    return null;
   }
+  return patient;
 };
 
 /**
@@ -124,66 +111,44 @@ const getPatientByEmail = async (email) => {
  * @returns {Object} paginated list of patients
  */
 const getAllPatients = async (filters = {}, page = 1, limit = 10, useReadView = true) => {
-  try {
+  const query = {};
 
-    const query = {};
+  // Apply filters
+  if (filters.status) {
+    query.status = filters.status;
+  }
 
-    // Apply filters
-    if (filters.status) {
-      query.status = filters.status;
-    }
+  if (filters.city) {
+    query.city = new RegExp(filters.city, 'i'); // case insensitive
+  }
 
-    if (filters.city) {
-      query.city = new RegExp(filters.city, 'i'); // case insensitive
-    }
+  if (filters.search) {
+    // use text search on read for better performance
+    //query.$text = { $search: filters.search };
 
-    if (filters.search) {
-      // use text search on read for better performance
-      //query.$text = { $search: filters.search };
+    // simple or condition on name and email fields
+    query.$or = [
+      { firstName: new RegExp(filters.search, 'i') },
+      { lastName: new RegExp(filters.search, 'i') },
+      { email: new RegExp(filters.search, 'i') },
+    ];
+  }
 
-      // simple or condition on name and email fields
-      query.$or = [
-        { firstName: new RegExp(filters.search, 'i') },
-        { lastName: new RegExp(filters.search, 'i') },
-        { email: new RegExp(filters.search, 'i') },
-      ];
-    }
+  const skip = (page - 1) * limit;
 
-    const skip = (page - 1) * limit;
-
-    // User read optimized view dfor fetching patients (CQRS)
-    if (useReadView) {
-      const [patients, total] = await Promise.all([
-        PatientReadView.find(query).sort({ registrationDate: -1 }).skip(skip).limit(limit),
-        PatientReadView.countDocuments(query)
-      ])
-
-      // fetch full patient data if needed (can be optimized further if required)
-      const patientIds = patients.map(patient => patient.patientId);
-      const fullPatients = await Patient.find({ _id: { $in: patientIds } });
-
-      return {
-        patients: fullPatients,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-        }
-      }
-    }
-
-    // fallback to write model if read view not available
+  // User read optimized view dfor fetching patients (CQRS)
+  if (useReadView) {
     const [patients, total] = await Promise.all([
-      Patient.find(query)
-        .sort({ registrationDate: -1 })
-        .skip(skip)
-        .limit(limit),
-      Patient.countDocuments(query)
+      PatientReadView.find(query).sort({ registrationDate: -1 }).skip(skip).limit(limit),
+      PatientReadView.countDocuments(query)
     ])
 
+    // fetch full patient data if needed (can be optimized further if required)
+    const patientIds = patients.map(patient => patient.patientId);
+    const fullPatients = await Patient.find({ _id: { $in: patientIds } });
+
     return {
-      patients,
+      patients: fullPatients,
       pagination: {
         page,
         limit,
@@ -191,9 +156,25 @@ const getAllPatients = async (filters = {}, page = 1, limit = 10, useReadView = 
         pages: Math.ceil(total / limit),
       }
     }
+  }
 
-  } catch (error) {
-    throw new Error('Failed to get patients');
+  // fallback to write model if read view not available
+  const [patients, total] = await Promise.all([
+    Patient.find(query)
+      .sort({ registrationDate: -1 })
+      .skip(skip)
+      .limit(limit),
+    Patient.countDocuments(query)
+  ])
+
+  return {
+    patients,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    }
   }
 };
 
