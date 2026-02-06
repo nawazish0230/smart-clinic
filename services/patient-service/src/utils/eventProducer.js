@@ -2,7 +2,7 @@ const { Kafka } = require('kafkajs');
 const logger = require('./logger');
 const config = require('../config');
 
-
+// doubt: have we consumed it later anywhere ?
 // Note: here we just creating event but not consuming anywhere we need to created another service for notification or alerting system, where we can consume this using SAGA pattern
 
 // kafka client configuration

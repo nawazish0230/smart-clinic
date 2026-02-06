@@ -65,6 +65,7 @@ const createPatient = async (patientData) => {
 * @throws {NotFoundError} - If patient not found
 */
 
+// doubt: why try catch is not being used in patient.service
 // No try-catch here: errors (e.g. DB failure, CastError) propagate to the controller,
 // which uses try-catch + next(error) so the global error middleware can format the response.
 const getPatientById = async (patientId) => {

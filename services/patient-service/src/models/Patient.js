@@ -89,6 +89,8 @@ const medicationSchema = new mongoose.Schema(
 );
 // _id: false prevent automatic _id field from being created
 
+// doubt: why we are using embedded data pattern here instead of reference pattern 
+// as going forward we need to query a lot if we use this pattern?
 /*
  * Note: Embedded data pattern - It is used here to store data in a single document
  */
