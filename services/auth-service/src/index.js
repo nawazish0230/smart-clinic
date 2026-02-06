@@ -36,7 +36,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     await connectDatabase();
-    const port = process.env.PORT || 5000;
+    const port = process.env.PORT || 3001;
     app.listen(port, () => {
       logger.info(`Auth service is running on port ${port}`);
     });
