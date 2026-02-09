@@ -58,6 +58,7 @@ const createProxyConfig = (target, pathRewrite = {}) => ({
   timeout: config.requestTimeout
 })
 
+// doubt : this is not working route is hung up ?
 /**
  * Auth Service Proxy
  */
