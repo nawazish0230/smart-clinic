@@ -13,7 +13,7 @@ class ServiceClient {
     this.serviceName = serviceName;
     this.baseURL = serviceConfig.url;
     this.timeout = serviceConfig.timeout || config.requestTimeout;
-    this.healthCheck = serviceConfig.healthCheck;
+    this.healthCheckPath = serviceConfig.healthCheck;
 
     // Create circuit breaker for this service
     this.circuitBreaker = createCircuitBreaker(serviceName, {
@@ -124,15 +124,29 @@ class ServiceClient {
    */
   async healthCheck() {
     try {
-      const response = await this.client.get(this.healthCheck, {
+      const response = await this.client.get(this.healthCheckPath, {
         timeout: 3000
       });
-      return response.status === 200;
+      // Check if status is 2xx (successful)
+      const isHealthy = response.status >= 200 && response.status < 300;
+
+      if (!isHealthy) {
+        logger.warn(`Health check returned non-2xx status for service: ${this.serviceName}`, {
+          service: this.serviceName,
+          status: response.status,
+          url: `${this.baseURL}${this.healthCheckPath}`
+        });
+      }
+
+      return isHealthy;
     } catch (error) {
       logger.warn(`Health check failed for service: ${this.serviceName}`, {
         service: this.serviceName,
-        error: error.message
-      })
+        url: `${this.baseURL}${this.healthCheckPath}`,
+        error: error.message,
+        code: error.code,
+        responseStatus: error.response?.status
+      });
       return false;
     }
   }

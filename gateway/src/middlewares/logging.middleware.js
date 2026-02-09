@@ -7,20 +7,19 @@ const logger = require('../utils/logger');
 
 const requestLogger = (req, res, next) => {
   const startTime = Date.now();
+  console.log(`[gateway] Incoming: ${req.method} ${req.originalUrl}`);
 
-  // Log request
-  logger.http('Incoming request', {
+  // Log request (use info so it shows when LOG_LEVEL=info)
+  logger.info('Incoming request', {
     correlationId: req.correlationId,
     method: req.method,
     path: req.path,
-    query: req.query,
+    url: req.originalUrl,
     ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    user: req.user ? req.user.id : 'anonymous'
   });
 
-  // log request response when finished
-  req.on('finish', () => {
+  // Log when response is finished (res, not req)
+  res.on('finish', () => {
     const duration = Date.now() - startTime;
     const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
 

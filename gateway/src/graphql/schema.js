@@ -6,7 +6,7 @@ const { gql } = require('apollo-server-express')
  */
 const typeDefs = gql`
   scalar Date
-  Scalar JSON
+  scalar JSON
 
   type Query {
     _empty: String

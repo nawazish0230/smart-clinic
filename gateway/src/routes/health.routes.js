@@ -8,7 +8,7 @@ const config = require('../config');
 /**
  * Health check endpoint
  */
-router.get('/health', async (req, res) => {
+router.get('/', async (req, res) => {
   res.status(200).json({
     status: 'healthy',
     serice: config.serviceName,
@@ -29,7 +29,7 @@ router.get('/ready', async (req, res) => {
     const criticalServices = ['auth', 'patient'];
     const healthChecks = await Promise.allSettled(
       criticalServices.map((serviceName) => {
-        serviceClients[serviceName].healthCheck();
+        return serviceClients[serviceName].healthCheck();
       })
     );
     const allHealthy = healthChecks.every((result) => result.status === 'fulfilled' && result.value === true);

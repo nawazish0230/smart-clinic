@@ -6,7 +6,7 @@ const config = require('../config');
 const logger = require('../utils/logger');
 
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const { authenticate, optionalAuthenticate } = require('../middlewares/auth.middleware')
+const { authenticate } = require('../middlewares/auth.middleware')
 const { generalRateLimiter, authRateLimiter } = require('../middlewares/rateLimiter.middleware');
 
 /**
@@ -17,26 +17,24 @@ const createProxyConfig = (target, pathRewrite = {}) => ({
   changeOrigin: true,
   pathRewrite,
   onProxyReq: (proxyReq, req) => {
-    // Formward correaltion Id
+    console.log(`[gateway] Proxying ${req.method} ${req.originalUrl} -> ${target}`);
     if (req.correlationId) {
       proxyReq.setHeader('X-Correlation-ID', req.correlationId);
     }
-
-    // formward user info if available
     if (req.user) {
       proxyReq.setHeader('X-User-Id', req.user.userId);
       proxyReq.setHeader('X-User-Email', req.user.email);
     }
 
-    logger.debug('Proxting request', {
+    logger.info('Proxying request', {
       target,
       path: req.path,
       method: req.method,
       correlationId: req.correlationId,
     });
   },
-  onProxyRes: (proxyRes, req) => {
-    logger.debug('Proxy response received', {
+  onProxyRes: (proxyRes, req, res) => {
+    logger.info('Proxy response received', {
       target,
       path: req.path,
       statusCode: proxyRes.statusCode,
@@ -63,10 +61,10 @@ const createProxyConfig = (target, pathRewrite = {}) => ({
 /**
  * Auth Service Proxy
  */
-router.use('/api/auth',
+router.use('/auth',
   authRateLimiter, // stricter rate limiting for auth endpoints
   createProxyMiddleware(createProxyConfig(config.services.auth.url, {
-    '^/api/auth': '/api/auth', // keep the path as is
+    '^/auth': '/api/auth', // keep the path as is
   }))
 );
 
@@ -74,11 +72,11 @@ router.use('/api/auth',
 /**
  * Patient Service Proxy
  */
-router.use('/api/patients',
+router.use('/patients',
   authenticate,  // all patient endpoints require authentication
   generalRateLimiter,
   createProxyMiddleware(createProxyConfig(config.services.patient.url, {
-    '^/api/patients': '/api/patients',
+    '^/patients': '/api/patients',
   }))
 );
 

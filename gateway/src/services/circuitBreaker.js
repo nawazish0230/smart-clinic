@@ -1,5 +1,5 @@
 const CircuitBreaker = require('opossum');
-const config = requie('../config');
+const config = require('../config');
 const logger = require('../utils/logger');
 const { CircuitBreakerOpneError } = require('../utils/errors');
 
