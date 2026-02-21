@@ -7,6 +7,7 @@ const swaggerUI = require('swagger-ui-express');
 const swaggerSepc = require('./config/swagger');
 
 const authRoutes = require('./routes/auth.route');
+const healthRoutes = require('./routes/health.route');
 const connectDatabase = require('./config/database');
 
 dotenv.config();
@@ -25,6 +26,7 @@ app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(
 }
 ));
 
+app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 
 // 404 not found handler
